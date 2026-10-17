@@ -73,10 +73,9 @@ def download_video(keyword):
 
 def render_final_reel():
     """ترکیب ویدیو، صدای گوینده و زیرنویس فارسی در ابعاد استاندارد ریلز"""
-    # تبدیل فرمت زیرنویس و تنظیم استایل وسط صفحه
     subprocess.run(["ffmpeg", "-y", "-i", "subs.vtt", "subs.srt"], check=True)
     
-     vf_filter = (
+    vf_filter = (
         "scale=1080:1920:force_original_aspect_ratio=increase,"
         "crop=1080:1920,"
         "subtitles=subs.srt:force_style='FontName=Vazirmatn,FontSize=18,PrimaryColour=&H0000FFFF,OutlineColour=&H00000000,BorderStyle=3,Outline=2,Shadow=1,Alignment=2,MarginV=70'"
