@@ -1,0 +1,48 @@
+name: Generate AI Reel
+
+on:
+  workflow_dispatch: # امکان اجرای دستی با یک کلیک برای تست
+  schedule:
+    - cron: '0 9,17 * * *' # اجرای خودکار روزی ۲ بار
+
+jobs:
+  build_video:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: دریافت فایل‌های پروژه
+        uses: actions/checkout@v4
+
+      - name: نصب پایتون
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: نصب موتور ویدیو (FFmpeg) و فونت فارسی وزیرمتن
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg fonts-hosny-amiri wget unzip fontconfig
+          mkdir -p ~/.fonts
+          wget -q https://github.com/rastikerdar/vazirmatn/releases/download/v33.003/Vazirmatn-v33.003.zip -O vazir.zip
+          unzip -q vazir.zip -d ~/.fonts/
+          fc-cache -f -v
+
+      - name: نصب کتابخانه‌های هوش مصنوعی و صدا
+        run: |
+          pip install google-genai edge-tts requests
+
+      - name: اصلاح فاصله کد و ساخت ویدیوی ریلز
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+        run: |
+          sed -i 's/^     vf_filter =/    vf_filter =/' main.py
+          python main.py
+
+      - name: آماده‌سازی فایل ویدیوی ریلز و کپشن برای دانلود/انتشار
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-reel
+          path: |
+            final_reel.mp4
+            caption.txt
