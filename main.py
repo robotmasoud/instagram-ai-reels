@@ -10,30 +10,40 @@ PIXABAY_API_KEY = os.environ.get("PIXABAY_API_KEY")
 VOICE = "fa-IR-DilaraNeural"
 
 def generate_script():
-    """تولید سناریو با هوش مصنوعی بدون نیاز به هیچ کلید API"""
     prompt = """
     تو یک تولیدکننده محتوای وایرال اینستاگرام در حوزه هوش مصنوعی و تکنولوژی هستی.
     یک سناریوی جذاب ۲۰ ثانیه‌ای با قلاب میخکوب‌کننده بنویس.
-    خروجی را دقیقاً و فقط با این فرمت JSON برگردان و هیچ متن اضافی قبل یا بعدش ننویس:
+    خروجی را دقیقاً و فقط با این فرمت JSON برگردان و هیچ متن اضافی ننویس:
     {
       "voiceover": "متن فارسی کاملاً محاوره‌ای برای گوینده دختر، حداکثر ۴۵ کلمه بدون ایموجی و بدون کلمات انگلیسی",
-      "search_keyword": "futuristic technology",
+      "search_keyword": "technology",
       "caption": "کپشن جذاب اینستاگرام به همراه ۵ هشتگ"
     }
     """
-    response = requests.post(
-        "https://text.pollinations.ai/",
-        json={
-            "messages": [{"role": "user", "content": prompt}],
-            "model": "openai",
-            "jsonMode": True
-        },
-        timeout=30
-    )
-    text = response.text.strip()
-    if text.startswith("```"):
-        text = text.split("```")[1].replace("json", "", 1).strip()
-    return json.loads(text)
+    for _ in range(3):
+        try:
+            response = requests.post(
+                "https://text.pollinations.ai/",
+                json={
+                    "messages": [{"role": "user", "content": prompt}],
+                    "model": "openai",
+                    "jsonMode": True
+                },
+                timeout=30
+            )
+            text = response.text.strip()
+            if "{" in text and "}" in text:
+                text = text[text.find("{"):text.rfind("}")+1]
+            return json.loads(text)
+        except Exception as e:
+            print("تلاش مجدد...", e)
+            
+    # متن پشتیبان در صورت شلوغ بودن سرور رایگان
+    return {
+        "voiceover": "میدونستی با این ابزار هوش مصنوعی جدید میتونی کارهای روزمره‌ات رو ده برابر سریع‌تر انجام بدی و کلی در زمانت صرفه‌جویی کنی؟ همین الان پیجمون رو فالو کن تا لینک مستقیمش رو برات بفرستم!",
+        "search_keyword": "futuristic technology",
+        "caption": "بهترین ابزار هوش مصنوعی امسال! 🚀\nبرای دریافت لینک، کلمه هوش رو کامنت کن.\n#هوش_مصنوعی #تکنولوژی #ابزار_هوش_مصنوعی #ترفند #اینستاگرام"
+    }
 
 async def create_voice_and_subtitles(text):
     communicate = edge_tts.Communicate(text, VOICE, rate="+5%")
@@ -45,9 +55,8 @@ async def create_voice_and_subtitles(text):
             elif chunk["type"] == "WordBoundary":
                 submaker.feed(chunk)
     
-    subs_content = submaker.generate_subs()
     with open("subs.vtt", "w", encoding="utf-8") as file:
-        file.write(subs_content)
+        file.write(submaker.generate_subs())
 
 def download_video(keyword):
     url = f"https://pixabay.com/api/videos/?key={PIXABAY_API_KEY}&q={requests.utils.quote(keyword)}&per_page=10"
@@ -82,7 +91,7 @@ def render_final_reel():
     subprocess.run(cmd, check=True)
 
 async def main():
-    print("در حال نوشتن سناریو...")
+    print("در حال آماده‌سازی سناریو...")
     data = generate_script()
     with open("caption.txt", "w", encoding="utf-8") as f:
         f.write(data["caption"])
