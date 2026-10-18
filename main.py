@@ -8,7 +8,6 @@ import subprocess
 PIXABAY_API_KEY = os.environ.get("PIXABAY_API_KEY")
 VOICE = "fa-IR-DilaraNeural"
 
-# بانک سناریوهای ۱۰۰٪ طبیعی، تست‌شده و وایرال اینستاگرام
 VIRAL_SCRIPTS = [
     {
         "voiceover": "سه تا سایت هوش مصنوعی مخفی که حس می‌کنی استفاده ازشون غیرقانونیه! اولی سایت لومالبه که هر متنی بهش بدی برات یه ویدیوی سینمایی واقعی می‌سازه. دومی سایت سونو هست که باهاش می‌تونی در ده ثانیه با صدای خودت آهنگ حرفه‌ای بسازی. همین الان این ویدیو رو سیو کن تا گمشون نکنی!",
@@ -33,11 +32,9 @@ VIRAL_SCRIPTS = [
 ]
 
 def generate_script():
-    """انتخاب یا تولید سناریوی ۱۰۰٪ استاندارد و طبیعی"""
     return random.choice(VIRAL_SCRIPTS)
 
 def format_srt_time(ms):
-    """تبدیل میلی‌ثانیه به فرمت استاندارد SRT"""
     hours = int(ms // 3600000)
     ms %= 3600000
     minutes = int(ms // 60000)
@@ -47,7 +44,6 @@ def format_srt_time(ms):
     return f"{hours:02d}:{minutes:02d}:{seconds:02d},{milliseconds:03d}"
 
 def parse_vtt_time(t_str):
-    """تبدیل زمان VTT به میلی‌ثانیه"""
     parts = t_str.strip().replace(',', '.').split(':')
     if len(parts) == 3:
         h, m, s = parts
@@ -57,7 +53,6 @@ def parse_vtt_time(t_str):
     return int(float(h) * 3600000 + float(m) * 60000 + float(s) * 1000)
 
 def convert_vtt_to_short_srt(vtt_file, srt_file, max_words=3):
-    """تبدیل زیرنویس‌های طولانی به زیرنویس‌های ۲ الی ۳ کلمه‌ای تیک‌تاکی"""
     with open(vtt_file, "r", encoding="utf-8") as f:
         content = f.read()
 
@@ -104,7 +99,6 @@ def convert_vtt_to_short_srt(vtt_file, srt_file, max_words=3):
         f.write("\n".join(srt_entries))
 
 def create_voice_and_subtitles(text):
-    """تولید صدای پرانرژی و زیرنویس کوتاه"""
     cmd = [
         "edge-tts",
         "--voice", VOICE,
@@ -118,7 +112,6 @@ def create_voice_and_subtitles(text):
     convert_vtt_to_short_srt("subs.vtt", "subs.srt", max_words=3)
 
 def download_video(keyword):
-    """دانلود ویدیوی سینمایی و واقعی (حذف انیمیشن‌های بی‌کیفیت)"""
     queries = [keyword, "coding dark", "cyberpunk city", "smartphone neon", "working laptop"]
     for q in queries:
         url = f"https://pixabay.com/api/videos/?key={PIXABAY_API_KEY}&q={requests.utils.quote(q)}&video_type=film&per_page=15"
@@ -131,19 +124,43 @@ def download_video(keyword):
                 f.write(requests.get(video_url).content)
             return
 
+def get_audio_duration(file_path):
+    """پیدا کردن زمان دقیق فایل صوتی گوینده"""
+    cmd = [
+        "ffprobe", "-v", "error",
+        "-show_entries", "format=duration",
+        "-of", "default=noprint_wrappers=1:nokey=1",
+        file_path
+    ]
+    res = subprocess.run(cmd, stdout=subprocess.PIPE, text=True, check=True)
+    return float(res.stdout.strip())
+
 def render_final_reel():
-    """رندر حرفه‌ای با فیلتر سینمایی تیره، موزیک پس‌زمینه ملایم و زیرنویس بدون کادر سیاه"""
-    # ساخت یک لایه صدای اتمسفریک ملایم برای پس‌زمینه تا ویدیو خشک نباشد
+    duration = get_audio_duration("voice.mp3") + 0.5
+
+    # ساخت موزیک/اتمسفر پس‌زمینه دقیقاً به اندازه زمان صدای گوینده
     bgm_cmd = [
         "ffmpeg", "-y",
-        "-f", "lavfi", "-i", "anoisesrc=color=brown:amplitude=0.015",
-        "-f", "lavfi", "-i", "sine=frequency=110:sample_rate=44100",
+        "-f", "lavfi", "-i", f"anoisesrc=color=brown:amplitude=0.012:d={duration}",
+        "-f", "lavfi", "-i", f"sine=frequency=110:sample_rate=44100:d={duration}",
         "-filter_complex", "[1:a]volume=0.03,tremolo=f=2:d=0.7[s];[0:a][s]amix=inputs=2:duration=shortest,lowpass=f=400",
-        "-t", "40", "bgm.mp3"
+        "-t", str(duration), "bgm.mp3"
     ]
     subprocess.run(bgm_cmd, check=True)
 
-    # فیلتر تصویر: کراپ عمودی + تیره‌تر کردن پس‌زمینه برای درخشش متن + زیرنویس زرد با دورخط مشکی بدون کادر
+    # میکس صدای گوینده و صدای پس‌زمینه
+    mix_cmd = [
+        "ffmpeg", "-y",
+        "-i", "voice.mp3",
+        "-i", "bgm.mp3",
+        "-filter_complex", "[0:a]volume=1.4[v1];[1:a]volume=0.35[v2];[v1][v2]amix=inputs=2:duration=first[a]",
+        "-map", "[a]",
+        "-t", str(duration),
+        "final_audio.aac"
+    ]
+    subprocess.run(mix_cmd, check=True)
+
+    # فیلتر تصویر و زیرنویس بدون کادر سیاه (تیک‌تاکی)
     vf_filter = (
         "scale=1080:1920:force_original_aspect_ratio=increase,"
         "crop=1080:1920,"
@@ -151,16 +168,16 @@ def render_final_reel():
         "subtitles=subs.srt:force_style='FontName=Vazirmatn,FontSize=22,Bold=1,PrimaryColour=&H0000FFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=3,Shadow=2,Alignment=2,MarginV=140'"
     )
     
+    # رندر نهایی با زمان دقیق (بدون گیر کردن در حلقه)
     cmd = [
         "ffmpeg", "-y",
         "-stream_loop", "-1", "-i", "bg.mp4",
-        "-i", "voice.mp3",
-        "-i", "bgm.mp3",
-        "-filter_complex", f"[0:v]{vf_filter}[v];[1:a]volume=1.4[v_voice];[2:a]volume=0.35[v_bgm];[v_voice][v_bgm]amix=inputs=2:duration=first[a]",
-        "-map", "[v]", "-map", "[a]",
+        "-i", "final_audio.aac",
+        "-vf", vf_filter,
+        "-map", "0:v:0", "-map", "1:a:0",
         "-c:v", "libx264", "-preset", "fast", "-crf", "22",
         "-c:a", "aac", "-b:a", "192k",
-        "-shortest",
+        "-t", str(duration),
         "final_reel.mp4"
     ]
     subprocess.run(cmd, check=True)
