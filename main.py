@@ -7,182 +7,129 @@ import subprocess
 
 PIXABAY_API_KEY = os.environ.get("PIXABAY_API_KEY")
 
-# صدای فرید (لهجه تهرانی بسیار طبیعی‌تر از دلارا)
-# اگر صدای دختر را می‌خواهید، FaridNeural را به DilaraNeural تغییر دهید
-VOICE = "fa-IR-FaridNeural"
-
-# متن‌ها با نگارش آوایی تهرانی (بدون نیم‌فاصله) برای جلوگیری از لهجه دری/افغانی
-VIRAL_SCRIPTS = [
+# بانک موضوعات جامع همراه با کلمه کلیدی دقیق و اختصاصی برای دانلود ویدیوی ۱۰۰٪ مرتبط
+TOPICS = [
     {
-        "voiceover": "سه تا سایتِ هوشِ مصنوعیِ مخفی، که حس میکنی استفاده ازشون غیرقانونیه! اولی سایتِ لوما لَبه، که هر متنی بهش بدی، برات یه ویدیویِ سینماییِ واقعی میسازه. دومی سایتِ سونو هست، که باهاش میتونی تو ده ثانیه، یه آهنگِ حرفه‌ای بسازی. همین الان این ویدیو رو سیو کن تا گمشون نکنی!",
-        "search_keyword": "hacker typing",
-        "caption": "سایت‌های مخفی هوش مصنوعی که زندگیت رو عوض می‌کنن! 🤯🔥\n.\nکدوم یکی براتون جالب‌تر بود؟ توی کامنت‌ها بنویسید!\n.\n#هوش_مصنوعی #سایت_کاربردی #تکنولوژی #ترفند_موبایل #ادیت_ویدیو"
+        "topic": "معرفی سایت Luma Dream Machine برای تبدیل متن به ویدیوهای سینمایی",
+        "keyword": "cinematic camera movement",
+        "script": "سه تا سایتِ هوشِ مصنوعیِ مخفی که حس میکنی استفاده ازشون غیرقانونیه! اولی لوما لَبه که هر متنی بدی ویدیوی سینمایی میسازه. دومی سونو هست که تو ده ثانیه برات آهنگ حرفه‌ای تولید میکنه."
     },
     {
-        "voiceover": "دیگه هیچوقت برای پاورپوینت و پروژه‌های دانشگاهیت وقت نذار! فقط کافیه واردِ سایتِ گاما اَپ بشی و موضوعت رو به فارسی بنویسی. هوشِ مصنوعی تو کمتر از سی ثانیه، برات یه فایلِ ارائه فوق‌العاده حرفه‌ای با عکس و نمودار میسازه. حتما این پست رو برای دوستات بفرست!",
-        "search_keyword": "laptop dark",
-        "caption": "ساخت پاورپوینت در ۳۰ ثانیه با هوش مصنوعی! 🚀💻\n.\nاسم سایت: Gamma.app\nلایک و سیو یادت نره تا موقع نیاز پیداش کنی!\n.\n#پاورپوینت #دانشجویی #هوش_مصنوعی #ترفند_کامپیوتر #آموزش_رایگان"
+        "topic": "معرفی سایت Gamma.app برای ساخت پاورپوینت و پروژه دانشگاهی در سی ثانیه",
+        "keyword": "student studying laptop",
+        "script": "دیگه هیچوقت برای پاورپوینت و پروژه‌های دانشگاهیت وقت نذار! کافیه بری تو سایت گاما اَپ و موضوعت رو به فارسی بنویسی تا در کمتر از سی ثانیه برات یه فایل ارائه فوق‌العاده حرفه‌ای بسازه."
     },
     {
-        "voiceover": "اگه کیفیتِ عکسات پایینه یا تار افتاده، اصلا پاکشون نکن! برو توی سایتِ آپ اِسکیل مدیا، و عکست رو آپلود کن. این هوشِ مصنوعیِ رایگان، کیفیتِ عکست رو تا چهار برابر بالا میبره و کاملا شفافش میکنه. پیجمون رو فالو کن تا هر روز ترفندای خفن یاد بگیری!",
-        "search_keyword": "smartphone screen",
-        "caption": "افزایش کیفیت عکس‌های تار با هوش مصنوعی رایگان! 📸✨\n.\nاسم سایت: Upscale.media\nبفرست برای کسی که همیشه عکس‌هاش تار میفته!\n.\n#ادیت_عکس #کیفیت_عکس #هوش_مصنوعی #فتوشاپ #ترفند_اینستاگرام"
+        "topic": "معرفی سایت Upscale.media برای افزایش چهار برابری کیفیت عکس‌های تار",
+        "keyword": "smartphone retouch photo",
+        "script": "اگه کیفیت عکسات پایینه یا تار افتاده اصلا پاکشون نکن! برو تو سایت آپ اِسکیل مدیا و عکست رو آپلود کن تا کیفیتش رو تا چهار برابر بدون افت کیفیت بالا ببره."
+    },
+    {
+        "topic": "معرفی سایت ElevenLabs برای شبیه‌سازی و تقلید صدای هر فرد با هوش مصنوعی",
+        "keyword": "sound studio microphone",
+        "script": "چطوری صدای هر کسی رو که میخوایم با هوش مصنوعی شبیه‌سازی کنیم؟ سایت الون لبز الان قوی‌ترین ابزار صداگذاری دنیاست که با یه فایل صوتی کوتاه، هر متنی رو با همون صدا میخونه."
+    },
+    {
+        "topic": "معرفی سایت Perplexity AI که جایگزین بسیار هوشمندتر گوگل برای تحقیق است",
+        "keyword": "futuristic digital interface",
+        "script": "دیگه برای تحقیق و سرچ کردن توی گوگل وقتت رو تلف نکن! سایت پرپلکسیتی مثل یه دستیار هوشمند تمام اطلاعات رو برات مستند و دقیق جمع‌آوری میکنه."
     }
 ]
 
-def generate_script():
-    return random.choice(VIRAL_SCRIPTS)
+def generate_content():
+    """انتخاب هوشمند موضوع، ویدیو و متن‌های اینستاگرامی"""
+    item = random.choice(TOPICS)
+    
+    # ساخت کپشن اینستاگرام همراه با نام پیج لیام
+    caption = f"{item['topic']} 🚀🔥\n.\nاگه از این آموزش خوشت اومد برای دوستات بفرست!\n.\n#هوش_مصنوعی #سایت_کاربردی #تکنولوژی #ترفند_آموزشی #پیج_لیام"
+    
+    return item["script"], item["keyword"], caption
 
-def format_srt_time(ms):
-    hours = int(ms // 3600000)
-    ms %= 3600000
-    minutes = int(ms // 60000)
-    ms %= 60000
-    seconds = int(ms // 1000)
-    milliseconds = int(ms % 1000)
-    return f"{hours:02d}:{minutes:02d}:{seconds:02d},{milliseconds:03d}"
-
-def parse_vtt_time(t_str):
-    parts = t_str.strip().replace(',', '.').split(':')
-    if len(parts) == 3:
-        h, m, s = parts
-    else:
-        h = 0
-        m, s = parts
-    return int(float(h) * 3600000 + float(m) * 60000 + float(s) * 1000)
-
-def convert_vtt_to_short_srt(vtt_file, srt_file, max_words=3):
-    with open(vtt_file, "r", encoding="utf-8") as f:
-        content = f.read()
-
-    blocks = re.split(r'\n\s*\n', content)
-    srt_entries = []
-    idx = 1
-
-    for block in blocks:
-        lines = [line.strip() for line in block.strip().split('\n') if line.strip()]
-        if not lines or "-->" not in block:
-            continue
+def generate_subtitles_file(text):
+    """ساخت زیرنویس حرفه‌ای تیک‌تاکی شامل متن اصلی و کال‌تواکشن پایانی"""
+    words = text.split()
+    
+    # تقسیم متن به تکه‌های ۳ کلمه‌ای
+    chunks = [" ".join(words[i:i + 3]) for i in range(0, len(words), 3)]
+    
+    # اضافه شدن متن‌های پایانی درخواستی شما به انتهای زیرنویس
+    chunks.append("اگه به این سری موضوعات علاقه داری،")
+    chunks.append("فالو و سیو یادت نره! 🔥")
+    chunks.append("پیج لیام 🚀")
+    
+    total_duration = len(chunks) * 2.2  # هر تکه حدود ۲.۲ ثانیه نمایش داده شود
+    
+    srt_lines = []
+    for i, chunk in enumerate(chunks):
+        start_sec = i * 2.2
+        end_sec = (i + 1) * 2.2
         
-        time_line = None
-        text_lines = []
-        for line in lines:
-            if "-->" in line:
-                time_line = line
-            elif not line.startswith("WEBVTT") and not line.isdigit():
-                text_lines.append(line)
+        # فرمت زمان‌سنجی SRT
+        start_time = f"00:00:{int(start_sec):02d},{int((start_sec % 1) * 1000):03d}"
+        end_time = f"00:00:{int(end_sec):02d},{int((end_sec % 1) * 1000):03d}"
         
-        if not time_line or not text_lines:
-            continue
+        srt_lines.append(f"{i+1}\n{start_time} --> {end_time}\n{chunk}\n")
+        
+    with open("subs.srt", "w", encoding="utf-8") as f:
+        f.write("\n".join(srt_lines))
+        
+    return total_duration
 
-        start_str, end_str = time_line.split("-->")
-        start_ms = parse_vtt_time(start_str)
-        end_ms = parse_vtt_time(end_str)
-        duration = max(end_ms - start_ms, 200)
-
-        full_text = " ".join(text_lines)
-        words = full_text.split()
-        if not words:
-            continue
-
-        chunks = [" ".join(words[i:i + max_words]) for i in range(0, len(words), max_words)]
-        chunk_dur = duration / len(chunks)
-
-        for i, chunk in enumerate(chunks):
-            c_start = start_ms + i * chunk_dur
-            c_end = start_ms + (i + 1) * chunk_dur
-            srt_entries.append(f"{idx}\n{format_srt_time(c_start)} --> {format_srt_time(c_end)}\n{chunk}\n")
-            idx += 1
-
-    with open(srt_file, "w", encoding="utf-8") as f:
-        f.write("\n".join(srt_entries))
-
-def create_voice_and_subtitles(text):
-    # حذف دستکاری pitch برای جلوگیری از لهجه غیرطبیعی
-    cmd = [
-        "edge-tts",
-        "--voice", VOICE,
-        "--rate=+8%",
-        "--text", text,
-        "--write-media", "voice.mp3",
-        "--write-subtitles", "subs.vtt"
-    ]
-    subprocess.run(cmd, check=True)
-    convert_vtt_to_short_srt("subs.vtt", "subs.srt", max_words=3)
-
-def download_video(keyword):
-    queries = [keyword, "coding dark", "cyberpunk city", "smartphone neon", "working laptop"]
-    for q in queries:
-        url = f"https://pixabay.com/api/videos/?key={PIXABAY_API_KEY}&q={requests.utils.quote(q)}&video_type=film&per_page=15"
+def download_high_quality_video(keyword):
+    """دانلود ویدیوی کاملاً مرتبط با بالاترین کیفیت ممکن از Pixabay"""
+    url = f"https://pixabay.com/api/videos/?key={PIXABAY_API_KEY}&q={requests.utils.quote(keyword)}&video_type=film&per_page=15"
+    res = requests.get(url).json()
+    hits = [h for h in res.get("hits", []) if h.get("duration", 0) >= 10]
+    
+    if not hits:
+        # جستجوی پشتیبان در صورت عدم پیدا شدن نتیجه دقیق
+        url = f"https://pixabay.com/api/videos/?key={PIXABAY_API_KEY}&q=technology&video_type=film&per_page=15"
         res = requests.get(url).json()
-        hits = [h for h in res.get("hits", []) if h.get("duration", 0) >= 8]
-        if hits:
-            video_data = random.choice(hits)
-            video_url = video_data["videos"]["large"]["url"] or video_data["videos"]["medium"]["url"]
-            with open("bg.mp4", "wb") as f:
-                f.write(requests.get(video_url).content)
-            return
+        hits = res.get("hits", [])
+        
+    video_data = random.choice(hits)
+    # انتخاب بالاترین کیفیت ویدیو (Large یا Medium)
+    video_url = video_data["videos"].get("large", {}).get("url") or video_data["videos"]["medium"]["url"]
+    
+    with open("bg.mp4", "wb") as f:
+        f.write(requests.get(video_url).content)
 
-def get_audio_duration(file_path):
-    cmd = [
-        "ffprobe", "-v", "error",
-        "-show_entries", "format=duration",
-        "-of", "default=noprint_wrappers=1:nokey=1",
-        file_path
-    ]
-    res = subprocess.run(cmd, stdout=subprocess.PIPE, text=True, check=True)
-    return float(res.stdout.strip())
-
-def render_final_reel():
-    duration = get_audio_duration("voice.mp3") + 0.5
-
-    bgm_cmd = [
-        "ffmpeg", "-y",
-        "-f", "lavfi", "-i", f"anoisesrc=color=brown:amplitude=0.012:d={duration}",
-        "-f", "lavfi", "-i", f"sine=frequency=110:sample_rate=44100:d={duration}",
-        "-filter_complex", "[1:a]volume=0.03,tremolo=f=2:d=0.7[s];[0:a][s]amix=inputs=2:duration=shortest,lowpass=f=400",
-        "-t", str(duration), "bgm.mp3"
-    ]
-    subprocess.run(bgm_cmd, check=True)
-
-    mix_cmd = [
-        "ffmpeg", "-y",
-        "-i", "voice.mp3",
-        "-i", "bgm.mp3",
-        "-filter_complex", "[0:a]volume=1.4[v1];[1:a]volume=0.35[v2];[v1][v2]amix=inputs=2:duration=first[a]",
-        "-map", "[a]",
-        "-t", str(duration),
-        "final_audio.aac"
-    ]
-    subprocess.run(mix_cmd, check=True)
-
+def render_silent_reel(duration):
+    """رندر ویدیوی بی‌صدا با کیفیت فوق‌العاده بالا و زیرنویس اختصاصی"""
     vf_filter = (
         "scale=1080:1920:force_original_aspect_ratio=increase,"
         "crop=1080:1920,"
-        "eq=brightness=-0.22:contrast=1.15:saturation=1.2,"
-        "subtitles=subs.srt:force_style='FontName=Vazirmatn,FontSize=22,Bold=1,PrimaryColour=&H0000FFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=3,Shadow=2,Alignment=2,MarginV=140'"
+        "eq=brightness=-0.18:contrast=1.2:saturation=1.25,"
+        "subtitles=subs.srt:force_style='FontName=Vazirmatn,FontSize=24,Bold=1,PrimaryColour=&H0000FFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=3.5,Shadow=2,Alignment=2,MarginV=150'"
     )
     
     cmd = [
         "ffmpeg", "-y",
         "-stream_loop", "-1", "-i", "bg.mp4",
-        "-i", "final_audio.aac",
         "-vf", vf_filter,
-        "-map", "0:v:0", "-map", "1:a:0",
-        "-c:v", "libx264", "-preset", "fast", "-crf", "22",
-        "-c:a", "aac", "-b:a", "192k",
+        "-an",  # حذف کامل صدا از خروجی ویدیو
+        "-c:v", "libx264", "-preset", "medium", "-crf", "18",  # کیفیت رندر بسیار بالا
         "-t", str(duration),
         "final_reel.mp4"
     ]
     subprocess.run(cmd, check=True)
 
 def main():
-    data = generate_script()
+    print("در حال آماده‌سازی محتوا و موضوعات...")
+    script_text, keyword, caption = generate_content()
+    
     with open("caption.txt", "w", encoding="utf-8") as f:
-        f.write(data["caption"])
-    create_voice_and_subtitles(data["voiceover"])
-    download_video(data["search_keyword"])
-    render_final_reel()
+        f.write(caption)
+        
+    print(f"موضوع انتخاب شده با کلمه کلیدی: {keyword}")
+    duration = generate_subtitles_file(script_text)
+    
+    print("در حال دانلود ویدیوی باکیفیت مرتبط...")
+    download_high_quality_video(keyword)
+    
+    print("در حال رندر نهایی ویدیوی بی‌صدا با کیفیت بالا...")
+    render_silent_reel(duration)
+    print("ریلز با موفقیت ساخته شد!")
 
 if __name__ == "__main__":
     main()
