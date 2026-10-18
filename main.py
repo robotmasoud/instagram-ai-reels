@@ -4,33 +4,32 @@ import random
 import requests
 import subprocess
 
-# استفاده از کلید Pexels (یا اگر ندارید از همان متغیر قبلی استفاده می‌شود)
-PEXELS_API_KEY = os.environ.get("PEXELS_API_KEY") or os.environ.get("PIXABAY_API_KEY")
+PIXABAY_API_KEY = os.environ.get("PIXABAY_API_KEY")
 
 TOPICS = [
     {
         "topic": "معرفی سایت Luma Dream Machine برای تبدیل متن به ویدیوهای سینمایی",
-        "keyword": "futuristic cinematic technology",
+        "keyword": "futuristic technology",
         "script": "سه تا سایتِ هوشِ مصنوعیِ مخفی که حس میکنی استفاده ازشون غیرقانونیه! اولی لوما لَبه که هر متنی بدی ویدیوی سینمایی میسازه. دومی سونو هست که تو ده ثانیه برات آهنگ حرفه‌ای تولید میکنه."
     },
     {
         "topic": "معرفی سایت Gamma.app برای ساخت پاورپوینت و پروژه دانشگاهی در سی ثانیه",
-        "keyword": "modern office laptop working",
+        "keyword": "laptop working",
         "script": "دیگه هیچوقت برای پاورپوینت و پروژه‌های دانشگاهیت وقت نذار! کافیه بری تو سایت گاما اَپ و موضوعت رو به فارسی بنویسی تا در کمتر از سی ثانیه برات یه فایل ارائه فوق‌العاده حرفه‌ای بسازه."
     },
     {
         "topic": "معرفی سایت Upscale.media برای افزایش چهار برابری کیفیت عکس‌های تار",
-        "keyword": "smartphone editing screen",
+        "keyword": "smartphone screen",
         "script": "اگه کیفیت عکسات پایینه یا تار افتاده اصلا پاکشون نکن! برو تو سایت آپ اِسکیل مدیا و عکست رو آپلود کن تا کیفیتش رو تا چهار برابر بدون افت کیفیت بالا ببره."
     },
     {
         "topic": "معرفی سایت ElevenLabs برای شبیه‌سازی و تقلید صدای هر فرد با هوش مصنوعی",
-        "keyword": "voice recording studio microphone",
+        "keyword": "sound studio",
         "script": "چطوری صدای هر کسی رو که میخوایم با هوش مصنوعی شبیه‌سازی کنیم؟ سایت الون لبز الان قوی‌ترین ابزار صداگذاری دنیاست که با یه فایل صوتی کوتاه، هر متنی رو با همون صدا میخونه."
     },
     {
         "topic": "معرفی سایت Perplexity AI که جایگزین بسیار هوشمندتر گوگل برای تحقیق است",
-        "keyword": "cyberpunk digital hud screen",
+        "keyword": "digital hud",
         "script": "دیگه برای تحقیق و سرچ کردن توی گوگل وقتت رو تلف نکن! سایت پرپلکسیتی مثل یه دستیار هوشمند تمام اطلاعات رو برات مستند و دقیق جمع‌آوری میکنه."
     }
 ]
@@ -44,7 +43,6 @@ def generate_subtitles_file(text):
     words = text.split()
     chunks = [" ".join(words[i:i + 3]) for i in range(0, len(words), 3)]
     
-    # اضافه شدن نام برند شما و کال‌تواکشن پایانی
     chunks.append("اگه به این سری موضوعات علاقه داری،")
     chunks.append("فالو و سیو یادت نره! 🔥")
     chunks.append("پیج لیام 🚀")
@@ -67,31 +65,21 @@ def generate_subtitles_file(text):
     return total_duration
 
 def download_high_quality_video(keyword):
-    """دانلود ویدیوهای بسیار باکیفیت و سینمایی از موتور قدرتمند Pexels"""
-    headers = {"Authorization": PEXELS_API_KEY}
-    url = f"https://api.pexels.com/videos/search?query={requests.utils.quote(keyword)}&per_page=15&orientation=portrait"
+    """دانلود ویدیوی باکیفیت مرتبط با استفاده از کلید معتبر Pixabay"""
+    url = f"https://pixabay.com/api/videos/?key={PIXABAY_API_KEY}&q={requests.utils.quote(keyword)}&per_page=15"
+    res = requests.get(url).json()
+    hits = [h for h in res.get("hits", []) if h.get("duration", 0) >= 8]
     
-    res = requests.get(url, headers=headers).json()
-    videos = res.get("videos", [])
+    if not hits:
+        url = f"https://pixabay.com/api/videos/?key={PIXABAY_API_KEY}&q=technology&per_page=15"
+        res = requests.get(url).json()
+        hits = res.get("hits", [])
+        
+    video_data = random.choice(hits)
+    video_url = video_data["videos"]["large"]["url"] or video_data["videos"]["medium"]["url"]
     
-    if not videos:
-        # جستجوی پشتیبان با کلیدواژه عمومی تکنولوژی
-        url = f"https://api.pexels.com/videos/search?query=technology&per_page=15&orientation=portrait"
-        res = requests.get(url, headers=headers).json()
-        videos = res.get("videos", [])
-        
-    if videos:
-        video_obj = random.choice(videos)
-        # پیدا کردن بهترین کیفیت ویدیو
-        video_files = video_obj.get("video_files", [])
-        hd_files = [vf for vf in video_files if vf.get("quality") == "hd" or vf.get("width", 0) >= 1080]
-        selected_file = hd_files[0] if hd_files else video_files[0]
-        
-        video_url = selected_file["link"]
-        with open("bg.mp4", "wb") as f:
-            f.write(requests.get(video_url).content)
-    else:
-        raise Exception("ویدیویی از Pexels یافت نشد. لطفاً کلید PEXELS_API_KEY را بررسی کنید.")
+    with open("bg.mp4", "wb") as f:
+        f.write(requests.get(video_url).content)
 
 def render_silent_reel(duration):
     vf_filter = (
@@ -119,13 +107,13 @@ def main():
     with open("caption.txt", "w", encoding="utf-8") as f:
         f.write(caption)
         
-    print(f"موضوع انتخابی با کلمه کلیدی سینمایی: {keyword}")
+    print(f"موضوع انتخابی با کلمه کلیدی: {keyword}")
     duration = generate_subtitles_file(script_text)
     
-    print("در حال دانلود ویدیوی باکیفیت مرتبط از Pexels...")
+    print("در حال دانلود ویدیوی باکیفیت از Pixabay...")
     download_high_quality_video(keyword)
     
-    print("در حال رندر نهایی ویدیوی بی‌صدا با کیفیت فوق‌العاده...")
+    print("در حال رندر نهایی ویدیوی بی‌صدا...")
     render_silent_reel(duration)
     print("ریلز با موفقیت ساخته شد!")
 
