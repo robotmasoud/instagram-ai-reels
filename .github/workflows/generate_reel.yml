@@ -1,9 +1,9 @@
 name: Generate AI Reel
 
 on:
-  workflow_dispatch: # امکان اجرای دستی با یک کلیک برای تست
+  workflow_dispatch:
   schedule:
-    - cron: '0 9,17 * * *' # اجرای خودکار روزی ۲ بار
+    - cron: '0 9,17 * * *'
 
 jobs:
   build_video:
@@ -29,17 +29,16 @@ jobs:
 
       - name: نصب کتابخانه‌های هوش مصنوعی و صدا
         run: |
-          pip install google-genai edge-tts requests
+          pip install google-generativeai edge-tts requests
 
-      - name: اصلاح فاصله کد و ساخت ویدیوی ریلز
+      - name: ساخت و اجرای اسکریپت ریلز
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
         run: |
-          sed -i 's/^     vf_filter =/    vf_filter =/' main.py
           python main.py
 
-      - name: آماده‌سازی فایل ویدیوی ریلز و کپشن برای دانلود/انتشار
+      - name: آماده‌سازی فایل ویدیوی ریلز و کپشن برای دانلود
         uses: actions/upload-artifact@v4
         with:
           name: generated-reel
