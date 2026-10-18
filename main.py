@@ -5,31 +5,35 @@ import requests
 import asyncio
 import subprocess
 import edge_tts
-import google.generativeai as genai
 
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 PIXABAY_API_KEY = os.environ.get("PIXABAY_API_KEY")
-
-genai.configure(api_key=GEMINI_API_KEY)
 VOICE = "fa-IR-DilaraNeural"
 
 def generate_script():
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    """تولید سناریو با هوش مصنوعی بدون نیاز به هیچ کلید API"""
     prompt = """
     تو یک تولیدکننده محتوای وایرال اینستاگرام در حوزه هوش مصنوعی و تکنولوژی هستی.
     یک سناریوی جذاب ۲۰ ثانیه‌ای با قلاب میخکوب‌کننده بنویس.
-    خروجی را دقیقاً و فقط با این فرمت JSON برگردان:
+    خروجی را دقیقاً و فقط با این فرمت JSON برگردان و هیچ متن اضافی قبل یا بعدش ننویس:
     {
-      "voiceover": "متن فارسی برای گوینده دختر، حداکثر ۵۰ کلمه بدون ایموجی",
-      "search_keyword": "technology",
-      "caption": "کپشن اینستاگرام به همراه هشتگ"
+      "voiceover": "متن فارسی کاملاً محاوره‌ای برای گوینده دختر، حداکثر ۴۵ کلمه بدون ایموجی و بدون کلمات انگلیسی",
+      "search_keyword": "futuristic technology",
+      "caption": "کپشن جذاب اینستاگرام به همراه ۵ هشتگ"
     }
     """
-    response = model.generate_content(
-        prompt,
-        generation_config={"response_mime_type": "application/json"}
+    response = requests.post(
+        "https://text.pollinations.ai/",
+        json={
+            "messages": [{"role": "user", "content": prompt}],
+            "model": "openai",
+            "jsonMode": True
+        },
+        timeout=30
     )
-    return json.loads(response.text)
+    text = response.text.strip()
+    if text.startswith("```"):
+        text = text.split("```")[1].replace("json", "", 1).strip()
+    return json.loads(text)
 
 async def create_voice_and_subtitles(text):
     communicate = edge_tts.Communicate(text, VOICE, rate="+5%")
@@ -40,16 +44,20 @@ async def create_voice_and_subtitles(text):
                 file.write(chunk["data"])
             elif chunk["type"] == "WordBoundary":
                 submaker.feed(chunk)
+    
+    subs_content = submaker.generate_subs()
     with open("subs.vtt", "w", encoding="utf-8") as file:
-        file.write(submaker.generate_subs())
+        file.write(subs_content)
 
 def download_video(keyword):
-    url = f"https://pixabay.com/api/videos/?key={PIXABAY_API_KEY}&q={keyword}&per_page=10"
+    url = f"https://pixabay.com/api/videos/?key={PIXABAY_API_KEY}&q={requests.utils.quote(keyword)}&per_page=10"
     res = requests.get(url).json()
     hits = res.get("hits", [])
     if not hits:
         hits = requests.get(f"https://pixabay.com/api/videos/?key={PIXABAY_API_KEY}&q=technology&per_page=10").json().get("hits", [])
-    video_url = random.choice(hits)["videos"]["large"]["url"]
+    
+    video_data = random.choice(hits)
+    video_url = video_data["videos"]["large"]["url"] or video_data["videos"]["medium"]["url"]
     with open("bg.mp4", "wb") as f:
         f.write(requests.get(video_url).content)
 
@@ -58,7 +66,7 @@ def render_final_reel():
     vf_filter = (
         "scale=1080:1920:force_original_aspect_ratio=increase,"
         "crop=1080:1920,"
-        "subtitles=subs.srt:force_style='FontName=Vazirmatn,FontSize=18,PrimaryColour=&H0000FFFF,OutlineColour=&H00000000,BorderStyle=3,Outline=2,Shadow=1,Alignment=2,MarginV=70'"
+        "subtitles=subs.srt:force_style='FontName=Vazirmatn,FontSize=16,PrimaryColour=&H0000FFFF,OutlineColour=&H00000000,BorderStyle=3,Outline=2,Shadow=1,Alignment=2,MarginV=70'"
     )
     cmd = [
         "ffmpeg", "-y",
@@ -74,12 +82,17 @@ def render_final_reel():
     subprocess.run(cmd, check=True)
 
 async def main():
+    print("در حال نوشتن سناریو...")
     data = generate_script()
     with open("caption.txt", "w", encoding="utf-8") as f:
         f.write(data["caption"])
+    print("در حال ساخت صدای دلارا و زیرنویس...")
     await create_voice_and_subtitles(data["voiceover"])
-    download_video(data["search_keyword"])
+    print("در حال دانلود ویدیو از Pixabay...")
+    download_video(data.get("search_keyword", "technology"))
+    print("در حال رندر نهایی ویدیو...")
     render_final_reel()
+    print("ریلز با موفقیت ساخته شد!")
 
 if __name__ == "__main__":
     asyncio.run(main())
