@@ -2,9 +2,7 @@ import os
 import json
 import random
 import requests
-import asyncio
 import subprocess
-import edge_tts
 
 PIXABAY_API_KEY = os.environ.get("PIXABAY_API_KEY")
 VOICE = "fa-IR-DilaraNeural"
@@ -38,25 +36,23 @@ def generate_script():
         except Exception as e:
             print("تلاش مجدد...", e)
             
-    # متن پشتیبان در صورت شلوغ بودن سرور رایگان
     return {
         "voiceover": "میدونستی با این ابزار هوش مصنوعی جدید میتونی کارهای روزمره‌ات رو ده برابر سریع‌تر انجام بدی و کلی در زمانت صرفه‌جویی کنی؟ همین الان پیجمون رو فالو کن تا لینک مستقیمش رو برات بفرستم!",
         "search_keyword": "futuristic technology",
         "caption": "بهترین ابزار هوش مصنوعی امسال! 🚀\nبرای دریافت لینک، کلمه هوش رو کامنت کن.\n#هوش_مصنوعی #تکنولوژی #ابزار_هوش_مصنوعی #ترفند #اینستاگرام"
     }
 
-async def create_voice_and_subtitles(text):
-    communicate = edge_tts.Communicate(text, VOICE, rate="+5%")
-    submaker = edge_tts.SubMaker()
-    with open("voice.mp3", "wb") as file:
-        async for chunk in communicate.stream():
-            if chunk["type"] == "audio":
-                file.write(chunk["data"])
-            elif chunk["type"] == "WordBoundary":
-                submaker.feed(chunk)
-    
-    with open("subs.vtt", "w", encoding="utf-8") as file:
-        file.write(submaker.generate_subs())
+def create_voice_and_subtitles(text):
+    """تولید مستقیم صدای دلارا و زیرنویس استاندارد بدون خطا"""
+    cmd = [
+        "edge-tts",
+        "--voice", VOICE,
+        "--rate=+5%",
+        "--text", text,
+        "--write-media", "voice.mp3",
+        "--write-subtitles", "subs.vtt"
+    ]
+    subprocess.run(cmd, check=True)
 
 def download_video(keyword):
     url = f"https://pixabay.com/api/videos/?key={PIXABAY_API_KEY}&q={requests.utils.quote(keyword)}&per_page=10"
@@ -90,13 +86,13 @@ def render_final_reel():
     ]
     subprocess.run(cmd, check=True)
 
-async def main():
+def main():
     print("در حال آماده‌سازی سناریو...")
     data = generate_script()
     with open("caption.txt", "w", encoding="utf-8") as f:
         f.write(data["caption"])
     print("در حال ساخت صدای دلارا و زیرنویس...")
-    await create_voice_and_subtitles(data["voiceover"])
+    create_voice_and_subtitles(data["voiceover"])
     print("در حال دانلود ویدیو از Pixabay...")
     download_video(data.get("search_keyword", "technology"))
     print("در حال رندر نهایی ویدیو...")
@@ -104,4 +100,4 @@ async def main():
     print("ریلز با موفقیت ساخته شد!")
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
